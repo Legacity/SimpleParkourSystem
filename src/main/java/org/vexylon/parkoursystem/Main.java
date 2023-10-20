@@ -3,9 +3,12 @@ package org.vexylon.parkoursystem;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,6 +17,7 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -23,6 +27,7 @@ import org.bukkit.scoreboard.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -31,9 +36,12 @@ public class Main extends JavaPlugin implements Listener {
 
     private final Map<UUID, Integer> deathCounts = new HashMap<>();
     private final Map<UUID, Integer> playerLevels = new HashMap<>();
+    private HashMap<UUID, Long> playerJoinTime = new HashMap<>();
     private File dataFile;
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private final Location defaultSpawn = new Location(Bukkit.getWorld("world"), 220, 103, -1168);
+    private final Map<UUID, Integer> punishments = new HashMap<>();
+    private final Map<UUID, Long> playtimes = new HashMap<>();
 
     @Override
     public void onEnable() {
@@ -129,7 +137,7 @@ public class Main extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         deathCounts.put(player.getUniqueId(), 0);
         playerLevels.put(player.getUniqueId(), 1);
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&aWelcome, Traceur! &a" + player.getName() + "! Let the parkour challenge begin!"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&eWelcome &a" + player.getName() + " &eto the server!"));
     }
 
     @EventHandler
@@ -160,40 +168,44 @@ public class Main extends JavaPlugin implements Listener {
             int playerCount = Bukkit.getOnlinePlayers().size();
             int deathCount = deathCounts.getOrDefault(player.getUniqueId(), 0);
             int playerLevel = playerLevels.getOrDefault(player.getUniqueId(), 1);
+            String timePlayed = getTimePlayed(player);
 
             objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&6&lPARKOUR "));
-            objective.getScore(" ").setScore(6);
-            objective.getScore(ChatColor.translateAlternateColorCodes('&', "&fPlayers: &a" + playerCount)).setScore(5);
-            objective.getScore(ChatColor.translateAlternateColorCodes('&', "&fDeaths: &a" + deathCount)).setScore(4);
-            objective.getScore(ChatColor.translateAlternateColorCodes('&', "&fLevel: &a" + playerLevel)).setScore(3);
+            objective.getScore(" ").setScore(8);
+            objective.getScore(ChatColor.translateAlternateColorCodes('&', "&fPlayers: &a" + playerCount)).setScore(7);
+            objective.getScore(ChatColor.translateAlternateColorCodes('&', "&fDeaths: &a" + deathCount)).setScore(6);
+            objective.getScore(ChatColor.translateAlternateColorCodes('&', "&fLevel: &a" + playerLevel)).setScore(5);
+            objective.getScore(" ").setScore(4);
+            objective.getScore(ChatColor.translateAlternateColorCodes('&', "&6⋆ ★ ☆ ✢ ✥ ✦ ✧ ❂ ❉ ✯")).setScore(3);
             objective.getScore(" ").setScore(2);
-            objective.getScore(ChatColor.translateAlternateColorCodes('&', "&eme.vexylon.uwu")).setScore(1);
+            objective.getScore(ChatColor.translateAlternateColorCodes('&', "&c⭐ &edev.vexylon.com &c⭐")).setScore(1);
+
             player.setScoreboard(scoreboard);
         }
     }
 
-    @EventHandler
-    public void onPlayerMove(PlayerMoveEvent event) {
-        Player player = event.getPlayer();
-        Location location = player.getLocation().subtract(0, 1, 0);
+    private String getTimePlayed(Player player) {
+        long currentTime = System.currentTimeMillis();
+        long startTime = playerJoinTime.getOrDefault(player.getUniqueId(), currentTime);
+        long timePlayedMillis = currentTime - startTime;
 
-        if (location.getBlock().getType() == Material.STONE_PRESSURE_PLATE ||
-                location.getBlock().getType() == Material.LIGHT_WEIGHTED_PRESSURE_PLATE ||
-                location.getBlock().getType() == Material.HEAVY_WEIGHTED_PRESSURE_PLATE) {
-            player.setBedSpawnLocation(location, true);
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&eCongratulations! On passing the level! Respawn point set."));
-        }
+        int seconds = (int) (timePlayedMillis / 1000) % 60;
+        int minutes = (int) ((timePlayedMillis / (1000 * 60)) % 60);
+        int hours = (int) ((timePlayedMillis / (1000 * 60 * 60)) % 24);
+
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        Player player;
         if (command.getName().equalsIgnoreCase("parkour")) {
             if (!(sender instanceof Player)) {
                 sender.sendMessage(ChatColor.RED + "Only players can use this command!");
                 return true;
             }
 
-            Player player = (Player) sender;
+            player = (Player) sender;
 
             if (args.length == 0) {
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&eYo humans! Thx for using my system. Here's how it works:"));
@@ -203,6 +215,8 @@ public class Main extends JavaPlugin implements Listener {
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6/parkour stop (Stops your parkour)"));
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6/parkour restart (Restarts your Parkour)"));
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6/parkour level [set <player> <level>|fruit <amount>] (Manage levels)"));
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6/parkour spawnmob <mobname> (Spawns a custom mob)"));
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6/parkour deletemob (Deletes all custom mobs)"));
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&e&l====================================="));
             } else if (args[0].equalsIgnoreCase("start")) {
                 player.sendMessage(ChatColor.GREEN + "Get ready to jump, roll, and run! The parkour challenge has begun!");
@@ -241,41 +255,64 @@ public class Main extends JavaPlugin implements Listener {
                 } else {
                     player.sendMessage(ChatColor.RED + "Invalid command. Usage: '/parkour level <set|fruit> <player> <level>'");
                 }
-            } else if (args[0].equalsIgnoreCase("admin")) {
-                if (args.length >= 2) {
-                    if (args[1].equalsIgnoreCase("kick") && args.length >= 3) {
-                        String targetName = args[2];
-                        Player targetPlayer = Bukkit.getPlayer(targetName);
-                        if (targetPlayer != null) {
-                            targetPlayer.kickPlayer(ChatColor.RED + "You have been kicked by an admin.");
-                            player.sendMessage(ChatColor.GREEN + "You've kicked " + targetName + " from the server!");
-                        } else {
-                            player.sendMessage(ChatColor.RED + "Player not found or offline.");
-                        }
-                    } else if (args[1].equalsIgnoreCase("ban") && args.length >= 3) {
-                        String targetName = args[2];
-                        Player targetPlayer = Bukkit.getPlayer(targetName);
-                        if (targetPlayer != null) {
-                            targetPlayer.isBanned();
-                            targetPlayer.kickPlayer(ChatColor.RED + "You have been banned by an admin.");
-                            player.sendMessage(ChatColor.GREEN + "You've banned " + targetName + " from the server!");
-                        } else {
-                            player.sendMessage(ChatColor.RED + "Player not found or offline.");
-                        }
-                    } else {
-                        player.sendMessage(ChatColor.RED + "Invalid admin command. Available commands: /parkour admin kick <playername>, /parkour admin ban <playername>");
-                    }
-                } else {
-                    player.sendMessage(ChatColor.RED + "Invalid command. Usage: /parkour admin <kick|ban> <playername>");
+            } else if (args[0].equalsIgnoreCase("spawnmob") && args.length >= 4) {
+                String mobName = ChatColor.translateAlternateColorCodes('&', args[1]); // Allowing color codes in the name
+                double health;
+
+                try {
+                    health = Double.parseDouble(args[2]);
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Invalid health value. Please provide a number.");
+                    return true;
                 }
-            } else {
-                player.sendMessage(ChatColor.RED + "Invalid command. Type '/parkour' for help.");
+
+                String displayName = ChatColor.translateAlternateColorCodes('&', args[3]);
+                
+                Entity spawnedEntity = spawnCustomMob(player.getLocation(), mobName, health, displayName);
+                if (spawnedEntity != null) {
+                    sender.sendMessage(ChatColor.GREEN + "Spawned a custom mob with name '" + displayName + "' and health " + health + "!");
+                } else {
+                    sender.sendMessage(ChatColor.RED + "Invalid mob type. Available types: " + Arrays.toString(EntityType.values()));
+                }
             }
-            return true;
         }
-        return false;
+
+return true;
+}
+    private String formatPlayTime(long playTime) {
+        long hours = playTime / 3600;
+        long minutes = (playTime % 3600) / 60;
+        long seconds = playTime % 60;
+
+        String formattedTime = "";
+
+        if (hours > 0) {
+            formattedTime += hours + "h ";
+        }
+
+        if (minutes > 0) {
+            formattedTime += minutes + "m ";
+        }
+
+        formattedTime += seconds + "s";
+
+        return formattedTime;
     }
-private class UserData {
+
+    private long calculatePlayTime(UUID targetUUID) {
+        long playTime = 0;
+        if (playtimes.containsKey(targetUUID)) {
+            long loginTime = playtimes.get(targetUUID);
+            playTime = System.currentTimeMillis() - loginTime;
+        }
+        return playTime / 1000; 
+    }
+
+    private int getPunishmentCount(UUID targetUUID) {
+        return punishments.getOrDefault(targetUUID, 0);
+    }
+
+    private class UserData {
         final Map<UUID, Integer> deathCounts;
         final Map<UUID, Integer> playerLevels;
 
@@ -283,5 +320,24 @@ private class UserData {
             this.deathCounts = deathCounts;
             this.playerLevels = playerLevels;
         }
+    }
+    private Entity spawnCustomMob(Location location, String mobName, double health, String displayName) {
+        EntityType entityType;
+        try {
+            entityType = EntityType.valueOf(mobName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null; 
+        }
+
+        Entity entity = location.getWorld().spawnEntity(location, entityType);
+        if (entity instanceof LivingEntity) {
+            LivingEntity livingEntity = (LivingEntity) entity;
+            livingEntity.setCustomNameVisible(true);
+            livingEntity.setCustomName(ChatColor.translateAlternateColorCodes('&', displayName));
+            livingEntity.setMaxHealth(health);
+            livingEntity.setHealth(health);
+            return livingEntity;
+        }
+        return null;
     }
 }

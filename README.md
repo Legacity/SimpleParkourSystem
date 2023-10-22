@@ -26,7 +26,7 @@ To install the Parkour System plugin on your Minecraft server, follow these step
 - `/parkour restart`: Restart the parkour challenge for a fresh start.
 - `/parkour level set <player> <level>`: Set a player's level to the specified value.
 - `/parkour level fruit <amount>`: Add fruits to your inventory.
-- '/parkour spawnmob <type> <health> <displayname>
+- '/parkour spawnmob <type> <health> <displayname>`
 For more details, type `/parkour` in the game to access the help menu.
 
 ## Contributing

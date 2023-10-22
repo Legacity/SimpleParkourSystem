@@ -9,7 +9,6 @@ Parkour System is an open-source Bukkit plugin designed to enhance the parkour e
 - **Death Tracking**: Keep track of player deaths and use them to enhance the gameplay experience.
 - **Chat Formatting**: Customize player chat messages with level-based prefixes for a personalized touch.
 - **Scoreboard Integration**: Display real-time information about players, including online count, death count, and player levels.
-- **Admin Commands**: Empower administrators with commands to manage players, including kicking and banning.
 
 ## Installation
 
@@ -27,9 +26,7 @@ To install the Parkour System plugin on your Minecraft server, follow these step
 - `/parkour restart`: Restart the parkour challenge for a fresh start.
 - `/parkour level set <player> <level>`: Set a player's level to the specified value.
 - `/parkour level fruit <amount>`: Add fruits to your inventory.
-- `/parkour admin kick <playername>`: Kick a player from the server.
-- `/parkour admin ban <playername>`: Ban a player from the server.
-
+- '/parkour spawnmob <type> <health> <displayname>
 For more details, type `/parkour` in the game to access the help menu.
 
 ## Contributing

@@ -1,7 +1,7 @@
 Copy code
 # Parkour System
 
-Parkour System is an open-source Bukkit plugin designed to enhance the parkour experience in Minecraft. With this plugin, players can enjoy challenging parkour courses, track their progress, and compete with friends. This project is actively maintained by the Vexylon community.
+Parkour System is an open-source Bukkit plugin designed to enhance the parkour experience in Minecraft. With this plugin, players can enjoy challenging parkour courses, track their progress, and compete with friends. This project is actively maintained by the MarsMinus community.
 
 ## Features
 
